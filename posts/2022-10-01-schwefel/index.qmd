@@ -1,0 +1,113 @@
+---
+title: The Schwefel function
+format:
+  html:
+    code-fold: true
+bibliography: schwefel.bib
+---
+
+## Introduction
+
+The Schwefel function is given by
+$$
+    F(x) = - \sum_{i = 1}^N x_i \sin \sqrt{|x_i|}
+$$
+where $-500 \le x_i \le 500$ for all $i = 1, \ldots, N$. It is often encountered in optimization because it has many local minima, as well as one global minimum at $x_1 = \cdots = x_n = 420.9687$, near the boundary of the domain. This makes it an interesting function to test optimization algorithms on. It appears first in a book by (who else) Schwefel from 1977 [see @1977-schwefel-NumerischeOptimierungComputerModellen, problem 2.3 in A1.2] but has been making a regular appearance since the 1990s in optimization papers along such perennial favorites as the Rastrigin function.
+
+```{python}
+#| fig-align: center
+#| fig-cap: "The Schwefel function in 2D."
+#| cap-align: center
+
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import numpy as np
+
+def schwefel(x, y):
+    return -x*np.sin(np.sqrt(np.abs(x))) - y*np.sin(np.sqrt(np.abs(y)))
+
+r = 500
+x = np.linspace(-r, r, 100)
+y = np.linspace(-r, r, 100)
+X, Y = np.meshgrid(x, y)
+Z = schwefel(X, Y)
+
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
+
+plt.show()
+
+```
+
+I was interested in finding the exact coordinates of the global minimum, as well as the value of the objective function at that point. To get started, observe that $F(x)$ is the sum of a bunch of univariate functions:
+$$
+    F(x) = f(x_1) + \cdots + f(x_n),
+$$
+where $f(x) = -x \sin\sqrt{|x|}$. Consequently, the gradient of $F$ is given by
+$$
+    \nabla F = \left[
+        \begin{matrix}
+            f'(x_1) \\
+            \vdots \\
+            f'(x_n)
+        \end{matrix}
+    \right],
+$$
+where $f'(x)$ is the derivative of $f(x)$. If we want to find the points where $\nabla F$ vanishes, we therefore have to find the zeros of $f'(x)$, and solving a one-dimensional equation (even if it is nonlinear) is of course much easier than solving a system of nonlinear equations.
+
+## Finding the minima of $f(x)$
+
+To find the zeros of $f'(x)$, we may assume that $x > 0$ (the case $x < 0$ is similar), so that
+$$
+    f'(x) = - \sin\sqrt{x} - \frac{\sqrt{x}}{2} \cos \sqrt{x} = 0.
+$$    
+This equation can be rewritten as 
+$$
+    \tan \sqrt{x} + \frac{\sqrt{x}}{2} = 0,
+$$
+or, by substituting $y = \sqrt{x}$, as
+$$
+    -2\tan y = y.
+$$
+In other words, we are looking for the fixed points of the function $g(y) = - 2\tan y$. There are a few things to keep in mind, though.
+
+By looking at the graph of $-2\tan y$, we see that there are many fixed points, and in particular, there is one inside each period of the tangent function. We can therefore parametrize these fixed points as $y = z + k \pi$, where $k$ is an integer and $z \in (-\pi/2, \pi/2)$. It turns out it will be easier to fix $k$, and look for $z$ inside one fundamental period of the tangent, by solving
+$$
+    \tan z = - \frac{z + k \pi}{2}.
+$$
+
+This equation has a unique fixed point, but it is unstable (since $|g'(y)| > 1$). To work around this, we take the arctan of both sides to get
+$$
+    z = - \arctan\left( \frac{z + k \pi}{2} \right).
+$$
+This gives us a fixed-point equation with a unique fixed point that is stable (attracting), so we can solve this e.g. by fixed-point iteration. Once we have a solution $z = z_\text{ext}$, the corresponding $x$ can then be done by putting
+$$
+    x_\text{ext} = (z_\text{ext} + k \pi)^2.
+$$
+The fixed-point equation has a few interesting properties: 
+
+1. For $k > 0$, the solution $z_\text{ext}$ will be negative: $z_\text{ext} \in (-\pi/2, 0)$. 
+2. As $k$ increases, $z_\text{ext}$ will tend towards $-\pi/2$. 
+
+Both of these properties follow from the graph of the arctan function shifted over $k \pi$ units to the left.
+
+Furthermore, by substituting the expression for the solution back into $f(x)$ and using these sign properties, we get that
+$$
+    f(x_\text{ext}) = (-1)^k x_\text{ext}\sqrt{\frac{x_\text{ext}}{4 + x_\text{ext}}}.
+$$
+In other words, we get an alternating series of minima (for $k$ odd) and maxima (for $k$ even), whose magnitude increases with increasing $k$.
+
+## Extrema of the Schwefel function
+
+This tells us everything we need to know about minima and maxima of $F$. First of all, we can find all (coordinate-wise positive) extrema of $F(x)$ by finding all of the zeros of the aforementioned fixed-point equation, and then choosing (with replacement) $n$ of these zeros and assembling them into a coordinate vector. Each such $n$-vector is a zero of $\nabla F$.
+
+The remaining question is which of these extrema provides the *global* minimum. First of all, note that $F$ being the sum of $n$ copies of $f$ tells us that the global minimum must have $x_1 = \cdots = x_n = x_\text{min}$, with $x_\text{min}$ the global minimum of $f(x)$. So we can reduce our $n$-dimensional minimization problem to a one-dimensional one, for which we have the fixed point equation.
+
+Secondly, where is $x_\text{min}$ located? For this, we use the expression for the minima and maxima derived earlier. We need to find the largest odd value for $k$ such that $x_\text{ext}$ is still within our domain. Since our domain is limited by $x = 500$, this gives us $k = 7$.
+
+Now, *the only numerical step that is necessary comes into play*. We need to solve the fixed-point equation with $k = 7$. This gives $z_\text{ext} \approx -1.4736256651868649$, and therefore
+$$
+    x_\text{ext} = (z_\text{ext} + 7 \pi)^2 \approx 420.96874635998194.
+$$
+This is precisely the value quoted in various sources, to lesser accuracy.
