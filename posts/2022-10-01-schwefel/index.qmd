@@ -1,23 +1,35 @@
 ---
 title: The Schwefel function
+image: schwefel.png
 format:
   html:
     code-fold: true
 bibliography: schwefel.bib
+jupyter: python3    
 ---
 
 ## Introduction
 
+Many optimization algorithms, especially in differential evolution and swarm intelligence, test their performance on a bunch of standard objective functions. Most of these functions are either straightforward (such as the spherical function, which is just the distance to the origin) or very well known (such as the Rastrigin function, which has [its own Wikipedia page](https://en.wikipedia.org/wiki/Rastrigin_function)). 
+
+One function that stands out as being both somewhat mysterious and not easy to reason about right away is the Schwefel function. The form that is usually described [in the literature](https://www.sfu.ca/~ssurjano/schwef.html) has these weird constants in it, and the location of the global minimum likewise is also given numerically as $x_1 = \cdots = x_n = 420.9687$), to limited precision. This made me curious: what's up with the Schwefel function? Where did it come from? Can we be more precise about the location of its minima? 
+
+## Mathematical description
+
 The Schwefel function is given by
 $$
-    F(x) = - \sum_{i = 1}^N x_i \sin \sqrt{|x_i|}
+    F(x) = - \sum_{i = 1}^N x_i \sin \sqrt{|x_i|}.
 $$
-where $-500 \le x_i \le 500$ for all $i = 1, \ldots, N$. It is often encountered in optimization because it has many local minima, as well as one global minimum at $x_1 = \cdots = x_n = 420.9687$, near the boundary of the domain. This makes it an interesting function to test optimization algorithms on. It appears first in a book by (who else) Schwefel from 1977 [see @1977-schwefel-NumerischeOptimierungComputerModellen, problem 2.3 in A1.2] but has been making a regular appearance since the 1990s in optimization papers along such perennial favorites as the Rastrigin function.
+Some references add $418.9829N$ to this expression, so that the global minimum has function value roughly equal to zero. I won't do that, but I'll just accept that the function changes with increasing $N$.
+
+Usually, the Schwefel function is enclosed in a box centered on the origin, of 1000 units on each side, i.e. $-500 \le x_i \le 500$ for all $i = 1, \ldots, N$. The function has many local minima, as well as one global minimum at $x_1 = \cdots = x_n = 420.9687$, near the boundary of the domain. This makes it an interesting function to test optimization algorithms on, as it is easy for an algorithm to (a) fail to explore regions near the boundary of the domain, or (b) get stuck in another local minimum.
+
+The Schwefel appears first in a book by (who else) Schwefel from 1977 [see
+@1977-schwefel-NumerischeOptimierungComputerModellen, problem 2.3 in A1.2] but this book is not often cited. In fact, Google Scholar gives me no citations until 1991, when the evolutionary computing community picked up on it [@1991-muhlenbein-ParallelGeneticAlgorithm is the first reference I could find]. Nowadays, it is used without citation, which is somewhat regrettable since it is not a widely known function.
 
 ```{python}
 #| fig-align: center
 #| fig-cap: "The Schwefel function in 2D."
-#| cap-align: center
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -98,16 +110,95 @@ $$
 $$
 In other words, we get an alternating series of minima (for $k$ odd) and maxima (for $k$ even), whose magnitude increases with increasing $k$.
 
+The table below lists the first few zeros of $f'(x)$, together with the value of $f(x)$.
+
+```{python}
+#| label: tbl-zeros
+#| tbl-cap: Extrema and function values for the 1D Schwefel function.
+
+from IPython.display import Markdown
+from tabulate import tabulate
+
+from math import atan, pi
+from scipy.optimize import fixed_point
+
+def schwefel_1d(x):
+    return -x*np.sin(np.abs(x)**0.5)
+
+def solve_fixed_point(k):
+    def fpe(z):
+        return -atan((z + k*pi)/2)
+    z_optim = fixed_point(fpe, 0)[()]
+    x_optim = (z_optim + k*pi)**2
+    return x_optim, schwefel_1d(x_optim)
+
+table = [(k,) + solve_fixed_point(k) for k in range(1, 8)]
+Markdown(tabulate(
+    table, 
+    headers=["Index", "x", "f(x)"],
+    floatfmt=".8f"
+))
+
+```
+
+```{python}
+#| fig-align: center
+#| fig-cap: "Extrema of the 1D Schwefel function."
+
+xs = np.linspace(0, 500, 500)
+ys = schwefel_1d(xs)
+
+plt.plot(xs, ys)
+plt.plot([item[1] for item in table],
+         [item[2] for item in table],
+         "ro")
+
+```
+
 ## Extrema of the Schwefel function
 
-This tells us everything we need to know about minima and maxima of $F$. First of all, we can find all (coordinate-wise positive) extrema of $F(x)$ by finding all of the zeros of the aforementioned fixed-point equation, and then choosing (with replacement) $n$ of these zeros and assembling them into a coordinate vector. Each such $n$-vector is a zero of $\nabla F$.
+This tells us everything we need to know about minima and maxima of $F$. First of all, we can find all (coordinate-wise positive) extrema of $F(x)$ by finding all of the zeros of the aforementioned fixed-point equation (see @tbl-zeros), and then choosing (with replacement) $n$ of these zeros and assembling them into a coordinate vector. Each such $n$-vector is a zero of $\nabla F$. In 2D, this gives the distribution of extrema as shown below.
+
+```{python}
+#| fig-align: center
+#| fig-cap: "Extrema of the 1D Schwefel function."
+
+r = 500
+x = np.linspace(-r, r, 100)
+y = np.linspace(-r, r, 100)
+X, Y = np.meshgrid(x, y)
+Z = schwefel(X, Y)
+    
+plt.figure(figsize=(7, 7))
+plt.contour(X, Y, Z, levels=20, cmap=cm.coolwarm)
+
+extrema = np.asarray([item[1] for item in table])
+Xext, Yext = np.meshgrid(extrema, extrema)
+
+def s(x, y):
+    plt.scatter(x, y, fc='gray', ec='black', zorder=2)
+
+s(Xext, Yext)
+s(Xext, -Yext)
+s(-Xext, Yext)
+s(-Xext, -Yext)
+
+```
 
 The remaining question is which of these extrema provides the *global* minimum. First of all, note that $F$ being the sum of $n$ copies of $f$ tells us that the global minimum must have $x_1 = \cdots = x_n = x_\text{min}$, with $x_\text{min}$ the global minimum of $f(x)$. So we can reduce our $n$-dimensional minimization problem to a one-dimensional one, for which we have the fixed point equation.
 
 Secondly, where is $x_\text{min}$ located? For this, we use the expression for the minima and maxima derived earlier. We need to find the largest odd value for $k$ such that $x_\text{ext}$ is still within our domain. Since our domain is limited by $x = 500$, this gives us $k = 7$.
 
-Now, *the only numerical step that is necessary comes into play*. We need to solve the fixed-point equation with $k = 7$. This gives $z_\text{ext} \approx -1.4736256651868649$, and therefore
+Now, we either solve the fixed-point equation for $k = 7$, or we consult table @tbl-zeros. Either way, we get
 $$
     x_\text{ext} = (z_\text{ext} + 7 \pi)^2 \approx 420.96874635998194.
 $$
-This is precisely the value quoted in various sources, to lesser accuracy.
+This is precisely the value quoted in various sources, to greater accuracy.
+
+## Approximate locations of the extrema
+
+[@1977-schwefel-NumerischeOptimierungComputerModellen] has the following approximate expression for the extrema:
+$$
+	x_\text{ext} \approx \pm \pi^2\left(\frac{1}{2} + k\right)^2,
+$$
+valid when $k$ is large. This follows easily from the fixed-point equation: for $k$ large, $\arctan\left( \frac{z + k \pi}{2} \right)$ tends to $-\pi/2$, so that $z_\text{ext} \approx \pi/2$, and the approximation for $x_\text{ext}$ follows.
