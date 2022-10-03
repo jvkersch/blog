@@ -3,3 +3,6 @@ _freeze/
 _site/
 
 /.quarto/
+**/.ipynb_checkpoints/
+
+posts/2022-10-01-schwefel/auto/
