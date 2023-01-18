@@ -1,0 +1,52 @@
+---
+title: Making sense of transposed convolutions
+format:
+  html:
+    code-fold: true
+jupyter: python3    
+---
+
+_This post is more a technical note to myself, rather than a full-fledged blog post._
+
+## Introduction
+
+A while ago I needed to figure out the derivative of a 2D convolution (implemented in PyTorch). This should be easy: a convolution is a linear map, so its derivative is just the map itself. True, in theory, but getting the practical details right proved to be sufficiently different. Thankfully transposed convolutions proved to be just what I needed. 
+
+Let's start with a convolutional layer, as well as with a transposed convolutional layer with the same parameters and shared weights (for simplicity, we assume there's no bias):
+
+```{python}
+#| echo: true
+#| code-fold: false
+import torch
+import torch.nn as nn
+
+conv = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=1, bias=False)
+t_conv = nn.ConvTranspose2d(1, 1, kernel_size=3, padding=1, stride=1, bias=False)
+t_conv.weight.data = conv.weight.data.transpose(2, 3)
+
+```
+
+It's now easy to convince ourselves that the transposed convolution is the derivative of the convolution. First we create an input, `x`, and a perturbation, `delta_x`. 
+
+```{python}
+#| echo: true
+#| code-fold: false
+x = torch.arange(25.0).reshape(1, 5, 5)
+delta_x = torch.zeros(1, 5, 5)
+delta_x[0, 3, 3] = 2.0
+epsilon = 0.001
+```
+
+Comparing a central-difference approximation to the gradient in the direction of `delta_x` with the transposed convolution, we see that both are equal to single precision:
+
+```{python}
+#| echo: true
+#| code-fold: false
+
+with torch.no_grad():
+    grad_central = (conv(x + epsilon*delta_x) - conv(x - epsilon*delta_x))/(2*epsilon)
+    grad_transposed = t_conv(delta_x)
+    diff = grad_central - grad_transposed
+    print(torch.max(torch.abs(diff)))
+
+```
