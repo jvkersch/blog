@@ -195,6 +195,39 @@ $$
 $$
 This is precisely the value quoted in various sources, to greater accuracy.
 
+## High-precision location of the extremum
+
+*Added 2024-01-03.*
+
+Using the [mpmath](https://mpmath.org) library for arbitrary-precision floating point arithmetic, we can find the value for $x_\text{ext}$ to very high precision, in this case to approximately 50 decimal places. This value can be useful e.g. when calibrating your optimizer.
+
+```{python}
+from mpmath import mp
+mp.dps = 60
+
+z = mp.mpf(0)
+eps = mp.mpf("1e-52")
+for _ in range(100):
+    # each iteration gives us 2 decimal places, so max 100
+    # iterations should be good enough
+    z_next = -mp.atan((z + 7*mp.pi)/2)
+    if mp.fabs(z - z_next) < eps:
+        break
+    z = z_next
+
+x = (z + 7*mp.pi)**2
+print(f"x = {x}")
+```
+
+With this value for $x_\text{ext}$, $f'(x)$ becomes vanishingly small, indicating that we're indeed right at the extremum.
+
+```{python}
+import mpmath
+
+resid = -mp.sin(x**0.5) - x**0.5/2 * mp.cos(x**0.5)
+print(f"f'(x) = {mpmath.nstr(resid)}")
+```
+
 ## Approximate locations of the extrema
 
 [@1977-schwefel-NumerischeOptimierungComputerModellen] has the following approximate expression for the extrema:
