@@ -42,17 +42,17 @@
     "text": "Approximate locations of the extrema\n(Schwefel 1977) has the following approximate expression for the extrema: \\[\n    x_\\text{ext} \\approx \\pm \\pi^2\\left(\\frac{1}{2} + k\\right)^2,\n\\] valid when \\(k\\) is large. This follows easily from the fixed-point equation: for \\(k\\) large, \\(\\arctan\\left( \\frac{z + k \\pi}{2} \\right)\\) tends to \\(-\\pi/2\\), so that \\(z_\\text{ext} \\approx \\pi/2\\), and the approximation for \\(x_\\text{ext}\\) follows."
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Welcome!",
-    "section": "",
-    "text": "The Schwefel function\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\nNo matching items"
-  },
-  {
     "objectID": "about.html",
     "href": "about.html",
     "title": "About",
     "section": "",
     "text": "About this blog"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Welcome!",
+    "section": "",
+    "text": "The Schwefel function\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\nNo matching items"
   }
 ]
