@@ -1,0 +1,11 @@
+{
+  "hash": "f9cdbadb675b3c7b4377f0bd01a6b22e",
+  "result": {
+    "markdown": "---\ntitle: Making sense of transposed convolutions\nformat:\n  html:\n    code-fold: true\n---\n\n_This post is more a technical note to myself, rather than a full-fledged blog post._\n\n## Introduction\n\nA while ago I needed to figure out the derivative of a 2D convolution (implemented in PyTorch). This should be easy: a convolution is a linear map, so its derivative is just the map itself. True, in theory, but getting the practical details right proved to be sufficiently different. Thankfully transposed convolutions proved to be just what I needed. \n\nLet's start with a convolutional layer, as well as with a transposed convolutional layer with the same parameters and shared weights (for simplicity, we assume there's no bias):\n\n::: {.cell execution_count=1}\n``` {.python .cell-code code-fold=\"false\"}\nimport torch\nimport torch.nn as nn\n\nconv = nn.Conv2d(1, 1, kernel_size=3, padding=1, stride=1, bias=False)\nt_conv = nn.ConvTranspose2d(1, 1, kernel_size=3, padding=1, stride=1, bias=False)\nt_conv.weight.data = conv.weight.data.transpose(2, 3)\n```\n:::\n\n\nIt's now easy to convince ourselves that the transposed convolution is the derivative of the convolution. First we create an input, `x`, and a perturbation, `delta_x`. \n\n::: {.cell execution_count=2}\n``` {.python .cell-code code-fold=\"false\"}\nx = torch.arange(25.0).reshape(1, 5, 5)\ndelta_x = torch.zeros(1, 5, 5)\ndelta_x[0, 3, 3] = 2.0\nepsilon = 0.001\n```\n:::\n\n\nComparing a central-difference approximation to the gradient in the direction of `delta_x` with the transposed convolution, we see that both are equal to single precision:\n\n::: {.cell execution_count=3}\n``` {.python .cell-code code-fold=\"false\"}\nwith torch.no_grad():\n    grad_central = (conv(x + epsilon*delta_x) - conv(x - epsilon*delta_x))/(2*epsilon)\n    grad_transposed = t_conv(delta_x)\n    diff = grad_central - grad_transposed\n    print(torch.max(torch.abs(diff)))\n```\n\n::: {.cell-output .cell-output-stdout}\n```\ntensor(0.2461)\n```\n:::\n:::\n\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}

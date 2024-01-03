@@ -1,0 +1,11 @@
+{
+  "hash": "268c0f07096c997ddb23fcd1e4219a46",
+  "result": {
+    "markdown": "---\ntitle: Gradient descent and gradient flow\nformat:\n  html:\n    code-fold: true\nbibliography: gd.bib\n---\n\nRecently a new paper appeared about \n\n[@2022-miyagawa-EquationMotionDeep]\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}
