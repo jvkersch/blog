@@ -193,7 +193,7 @@ Now, we either solve the fixed-point equation for $k = 7$, or we consult table @
 $$
     x_\text{ext} = (z_\text{ext} + 7 \pi)^2 \approx 420.96874635998194.
 $$
-This is precisely the value quoted in various sources, to greater accuracy.
+This is precisely the value quoted in various sources, to greater accuracy. This approximation is correct to about 8 decimal places (at least), corresponding to the default accuracy of SciPy's [`fixed_point`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fixed_point.html) solver. A higher-accuracy approximation is given in the next section.
 
 ## High-precision location of the extremum
 
@@ -202,18 +202,15 @@ This is precisely the value quoted in various sources, to greater accuracy.
 Using the [mpmath](https://mpmath.org) library for arbitrary-precision floating point arithmetic, we can find the value for $x_\text{ext}$ to very high precision, in this case to approximately 50 decimal places. This value can be useful e.g. when calibrating your optimizer.
 
 ```{python}
+#| code-fold: false
 from mpmath import mp
 mp.dps = 60
 
 z = mp.mpf(0)
-eps = mp.mpf("1e-52")
-for _ in range(100):
-    # each iteration gives us 2 decimal places, so max 100
-    # iterations should be good enough
-    z_next = -mp.atan((z + 7*mp.pi)/2)
-    if mp.fabs(z - z_next) < eps:
-        break
-    z = z_next
+for _ in range(50):
+    # each iteration gives us 2 decimal places, so a fixed 
+    # number of 50 iterations should be more than enough.
+    z = -mp.atan((z + 7*mp.pi)/2)
 
 x = (z + 7*mp.pi)**2
 print(f"x = {x}")
